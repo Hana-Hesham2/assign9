@@ -1,7 +1,9 @@
 // src/common/middleware/authentication.js
 import { VerifyToken } from "../utils/token.service.js";
+import * as db_service from "./../../DB/db.service.js";
+import userModel from "../../DB/models/user.model.js";
 
-export const authentication = (req, res, next) => {
+export const authentication = async(req, res, next) => {
   try {
     const { authorization } = req.headers;
 
@@ -9,8 +11,10 @@ export const authentication = (req, res, next) => {
       throw new Error("Token is missing");
     }
 
-    
-    const token = authorization;
+    const [prefix,token]=authorization.split(" ")
+    if(prefix!=="Bearer"){
+        throw new Error("Invalid Prefix")
+    }
 
     const decoded = VerifyToken({ token, secret_key: "secretKey" });
 
@@ -18,8 +22,13 @@ export const authentication = (req, res, next) => {
       throw new Error("Invalid token");
     }
 
-   
-    req.decoded = decoded;
+   const user = await db_service.findById({
+    model: userModel,
+    id: decoded.id ,
+    select: "-password",    
+  });
+
+    req.user = user;
 
     next();
   } catch (error) {

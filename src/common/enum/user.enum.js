@@ -9,3 +9,8 @@ export const providerEnum = {
     system:"system",
     google:"google"
 }
+
+export const rolesEnum = {
+    user:"user",
+    admin:"admin"
+}

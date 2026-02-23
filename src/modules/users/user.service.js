@@ -6,7 +6,9 @@ import { GenerateToken, VerifyToken } from "../../common/utils/token.service.js"
 import * as db_service from "../../DB/db.service.js"
 import userModel from "../../DB/models/user.model.js"
 import jwt from "jsonwebtoken";
-import { sendOTPEmail } from "./email.service.js";
+import {OAuth2Client} from 'google-auth-library';
+import { SALT_ROUNDS, SECRET_KEY } from "../../../config/config.service.js"
+// import { sendOTPEmail } from "./email.service.js";
 
 
 export const signUp = async (req, res, next) => {
@@ -27,16 +29,16 @@ export const signUp = async (req, res, next) => {
     data: {
       userName,
       email,
-      password: hashedPassword,
+      password: Hash({plainText:password, salt_rounds: SALT_ROUNDS}),
       age,
       gender,
       phone: encrypt(phone),
     },
   });
 
-  const otp = Math.floor(100000 + Math.random() * 900000); 
+//   const otp = Math.floor(100000 + Math.random() * 900000); 
 
-  await sendOTPEmail({ to: email, otp });
+//   await sendOTPEmail({ to: email, otp });
 
   successResponse({ res, status: 201, message: "Successful Sign Up", data: user });
 };
@@ -61,7 +63,7 @@ export const signIn = async (req, res, next) => {
 
   const access_token = GenerateToken({
     payload:{ id: user._id, email:user.email },
-    secret_key:"secretKey",
+    secret_key:SECRET_KEY,
     options:{
         expiresIn: "1h" 
     } 
@@ -73,15 +75,53 @@ export const signIn = async (req, res, next) => {
 
 export const getProfile = async (req, res, next) => {
   
-  const user = await db_service.findById({
-    model: userModel,
-    id: req.decoded.id ,
-    select: "-password",    
+  
+  successResponse({ res, message: "Done", data: req.user });
+};
+
+
+export const signUpwithGmail = async (req, res, next) => {
+  const { idToken } = req.body;
+  console.log(idToken);
+
+const client = new OAuth2Client();
+  const ticket = await client.verifyIdToken({
+      idToken,
+      audience: "764522976030-d0d4vnatfm1t7pe0kn7sihfb2ubqv9hd.apps.googleusercontent.com",
+      
   });
+  const payload = ticket.getPayload();
+  console.log(payload);
+  const {email,email_verified,name,picture}=payload
+  
 
-  if (!user) {
-    throw new Error("User doesn't exist");
+  let user = await db_service.findOne({
+    model: userModel,
+    filter: { email }
+  });
+  
+  if (!user){
+    user = await db_service.create({
+  model: userModel,
+  data: {
+    email,
+    confirmed: email_verified,
+    userName: name,             
+    profilePicture: picture,     
+    provider: providerEnum.google
   }
+});
+}
+  const access_token = GenerateToken({
+    payload:{ id: user._id, email:user.email },
+    secret_key:SECRET_KEY,
+    options:{
+        expiresIn: "1h" 
+    } 
+  })
+    
+  successResponse({ res, message: "Successful Sign in", data: {access_token} });
 
-  successResponse({ res, message: "Done", data: user });
+  
+//   successResponse({ res, status: 201, message: "Successful Sign Up", data: user });
 };

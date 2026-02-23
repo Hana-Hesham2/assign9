@@ -1,11 +1,15 @@
+import { PORT } from "../config/config.service.js"
 import express from "express"
 import { checkConnetionDB } from "./DB/models/connectionDB.js"
-import userModel from "./DB/models/user.model.js"
 import userRouter from "./modules/users/user.controller.js"
+import userModel from "./DB/models/user.model.js"
+import cors from "cors"
 const app=express()
-const port=3000
+const port=PORT
 
 const bootstrap=()=>{
+    
+    app.use(cors({origin:"*"}))
     
     app.use(express.json())
 
