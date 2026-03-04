@@ -8,39 +8,50 @@ import userModel from "../../DB/models/user.model.js"
 import jwt from "jsonwebtoken";
 import {OAuth2Client} from 'google-auth-library';
 import { SALT_ROUNDS, SECRET_KEY } from "../../../config/config.service.js"
+import cloudinary from "../../common/utils/cloudinary.js"
 // import { sendOTPEmail } from "./email.service.js";
 
 
 export const signUp = async (req, res, next) => {
   const { userName, email, password, confirmPassword, age, gender, phone } = req.body;
+  console.log(req.file,"after");
+  
 
-  if (password !== confirmPassword) {
-    throw new Error("Invalid password", { cause: 400 });
-  }
+//   if (password !== confirmPassword) {
+//     throw new Error("Invalid password", { cause: 400 });
+//   }
 
-  if (await db_service.findOne({ model: userModel, filter: { email } })) {
-    throw new Error("Email already exists", { cause: 409 });
-  }
+  // if (await db_service.findOne({ model: userModel, filter: { email } })) {
+  //   throw new Error("Email already exists", { cause: 409 });
+  // }
 
-  const hashedPassword = await Hash({ plainText: password });
+  const data = await cloudinary.uploader.upload(req.file.path)
 
-  const user = await db_service.create({
-    model: userModel,
-    data: {
-      userName,
-      email,
-      password: Hash({plainText:password, salt_rounds: SALT_ROUNDS}),
-      age,
-      gender,
-      phone: encrypt(phone),
-    },
-  });
+// //   const hashedPassword = await Hash({ plainText: password });
 
-//   const otp = Math.floor(100000 + Math.random() * 900000); 
+// let arr_paths =[]
+// for (const file of req.files.attachments) {
+//   arr_paths.push(file.path)
+// }
 
-//   await sendOTPEmail({ to: email, otp });
+  // const user = await db_service.create({
+  //   model: userModel,
+  //   data: {
+  //     userName,
+  //     email,
+  //     password: Hash({plainText:password}),
+  //     age,
+  //     gender,
+  //     phone: phone ? encrypt(phone) : null,
+  //     // profilePicture: req.files.attachment[0].path
+  //   },
+  // });
 
-  successResponse({ res, status: 201, message: "Successful Sign Up", data: user });
+// // //   const otp = Math.floor(100000 + Math.random() * 900000); 
+
+// // //   await sendOTPEmail({ to: email, otp });
+
+  successResponse({ res, status: 201, message: "Successful Sign Up", data: data });
 };
 
 
@@ -120,8 +131,42 @@ const client = new OAuth2Client();
     } 
   })
     
-  successResponse({ res, message: "Successful Sign in", data: {access_token} });
+  successResponse({ res, message: "Successful Sign in", data: {access_token} })}
 
   
 //   successResponse({ res, status: 201, message: "Successful Sign Up", data: user });
+
+export const refreshToken = async (req, res, next) => {
+  const { authorization } = req.body;
+
+  if (!authorization) {
+    throw new Error("token not exist");
+  }
+  console.log("decoded");
+  const decoded = VerifyToken({
+    token: authorization,
+    secret_key: REFRESH_SECRET_KEY,
+  });
+  if (!decoded || !decoded?.id) {
+    throw new Error("invalid token");
+  }
+  const user = await db_service.findOne({
+    model: userModel,
+    filter: { _id: decoded.id },
+  });
+  if (!user) {
+    throw new Error("user not exist", { cause: 400 });
+  }
+  const access_token = GenerateToken({
+    payload: {
+      id: user._id,
+      email: user.email,
+    },
+    secret_key: ACCESS_SECRET_KEY,
+    options: {
+      expiresIn: 60 * 5,
+    },
+  });
+  successResponse({
+    res,message: "success",data: { access_token },});
 };

@@ -38,7 +38,7 @@ const userSchema = new mongoose.Schema({
   },
   age: {
     type: Number,
-    required: function () {
+    function () {
       return this.provider !== providerEnum.google;
     },
     min: 20,
@@ -51,7 +51,7 @@ const userSchema = new mongoose.Schema({
   },
   phone: {
     type: String,
-    required: function () {
+    function () {
       return this.provider !== providerEnum.google;
     }
   },
