@@ -55,7 +55,25 @@ const userSchema = new mongoose.Schema({
       return this.provider !== providerEnum.google;
     }
   },
-  profilePicture: String,   
+  profilePicture:{
+    secure_url:String,
+    public_id:String
+  },
+  coverPicture:[{
+    secure_url:String,
+    public_id:String
+  }],
+  changeCredential: Date,
+  visitCount:{
+type:Number,
+default:0
+},
+gallery:[
+{
+secure_url:String,
+public_id:String
+}
+],   
   confirmed: Boolean,
   provider: {
     type: String,

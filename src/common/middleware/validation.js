@@ -4,9 +4,11 @@ export const validation =(schema)=>{
         console.log(Object.keys(schema));
 
         let errorResult = []
+        
         for (const key of Object.keys(schema)) {
-            console.log(key);
             const {error}= schema[key].validate(req[key],{abortEarly:false})
+            console.log(error?.details);
+            
             if (error){
                 error.details.forEach(element => {
                     errorResult.push({

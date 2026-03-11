@@ -4,6 +4,7 @@ import fs from "node:fs"
 export const multer_local = ({custom_path="General",custom_types =[]} = {}) => {
 
   const full_path = `uploads/${custom_path}`
+
   if(!fs.existsSync(full_path)){
     fs.mkdirSync(full_path,{recursive:true})
   }
@@ -22,10 +23,16 @@ export const multer_local = ({custom_path="General",custom_types =[]} = {}) => {
     console.log(file);
     
     if (!custom_types.includes(file.mimetype)){
-      cb(new Error("Invalide file type"))
+      return cb(new Error("Invalid file type"))
     }
+
     cb(null,true)
-  }}
+  }
+
+  const upload = multer({ storage, fileFilter })
+
+  return upload
+}
 
   export const multer_host = (custom_types =[]) => {
   

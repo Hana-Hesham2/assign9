@@ -1,10 +1,10 @@
-// src/common/middleware/authentication.js
 import { VerifyToken } from "../utils/token.service.js";
 import * as db_service from "./../../DB/db.service.js";
 import userModel from "../../DB/models/user.model.js";
+import { ACCESS_SECRET_KEY, PREFIX } from "../../../config/config.service.js";
+import revokeTokenModel from "../../DB/models/revokeToken.model.js";
 
 export const authentication = async(req, res, next) => {
-  try {
     const { authorization } = req.headers;
 
     if (!authorization) {
@@ -12,26 +12,34 @@ export const authentication = async(req, res, next) => {
     }
 
     const [prefix,token]=authorization.split(" ")
-    if(prefix!=="Bearer"){
+    if(prefix!==PREFIX){
         throw new Error("Invalid Prefix")
     }
 
-    const decoded = VerifyToken({ token, secret_key: "secretKey" });
+    const decoded = VerifyToken({ token, secret_key: ACCESS_SECRET_KEY});
 
     if (!decoded || !decoded.id) {
       throw new Error("Invalid token");
     }
 
-   const user = await db_service.findById({
+   const user = await db_service.findOne({
     model: userModel,
-    id: decoded.id ,
-    select: "-password",    
-  });
+    filter:{_id:decoded.id}});
+    if(!user){
+      throw new Error("User doesn't exist",{cause:400})
+    }
+    if(user?.changeCredential?.getTime() > decoded.iat *1000){
+      throw new Error("Token Expired")
+    }
 
-    req.user = user;
-
+    const revokeToken = await db_service.findOne({
+      model: revokeTokenModel,
+      filter: {tokenId:decoded.jti}
+    })
+    if(revokeToken){
+      throw new Error ("Token Revoked")
+    }
+    req.user=user
+    req.decoded=decoded
     next();
-  } catch (error) {
-    res.status(401).json({ message: error.message });
   }
-};

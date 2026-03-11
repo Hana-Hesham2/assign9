@@ -12,7 +12,8 @@
     "jsonwebtoken": "^9.0.3",
     "mongoose": "^9.1.5",
     "multer": "^2.1.0",
-    "nodemailer": "^8.0.1"
+    "nodemailer": "^8.0.1",
+    "redis": "^5.11.0"
   },
   "name": "saraha_app",
   "version": "1.0.0",

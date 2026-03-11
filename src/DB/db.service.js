@@ -37,11 +37,14 @@ export const updateOne = async({model ,filter ={} , update={},options={}}={})=>{
     return await doc.exec()
 }
 
-export const findOneAndUpdate = async({model ,filter ={} , options={}}={})=>{
-    const doc =model.updateOne(filter,update,{new:true, runValidators:true,...options})
-    return await doc.exec()
-}
-
+export const findOneAndUpdate = async ({ model, filter = {}, update = {}, options = {} } = {}) => {
+  const doc = await model.findOneAndUpdate(
+    filter,
+    update,
+    { new: true, runValidators: true, ...options }
+  );
+  return doc;
+};
 
 
 export const findById = async ({ model, id, select = "" }) => {
@@ -56,3 +59,11 @@ export const findById = async ({ model, id, select = "" }) => {
     throw error;
   }
 };
+
+export const deleteOne = async ({ model, filter = {} }) => {
+    return await model.deleteOne(filter)
+  };
+
+export const deleteMany = async ({ model, filter = {} }) => {
+    return await model.deleteMany(filter)
+  };
